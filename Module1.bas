@@ -38,22 +38,22 @@ Set oPPApp = New PowerPoint.Application
         .AllowMultiSelect = False
         .Filters.Add "Powerpoint Files", "*.pptx;*.pptm", 1
         .Show
-        End With
+    End With
     Set pres = oPPApp.Presentations.Open(FileName:=fd.SelectedItems.Item(1), ReadOnly:=msoTrue, WithWindow:=msoFalse)
 
-ReDim Preserve outlines(0 To 0)
+    ReDim Preserve outlines(0 To 0)
+    Debug.Print (Now & ": Processing...")
 
-pushLine ("<html>")
-  pushLine ("<head>")
-   pushLine ("<script src=""https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js""></script>")
+    pushLine ("<html>")
+    pushLine ("<head>")
+    pushLine ("<script src=""https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js""></script>")
     pushLine ("<script src=""https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.5/jszip.min.js""></script>")
     pushLine ("<script src=""https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@latest/dist/pptxgen.min.js""></script>")
-  pushLine ("</head>")
-pushLine ("<body>")
-  pushLine ("<script>")
-  pushLine ("let pptx = new PptxGenJS();")
-  pushLine ("pptx.layout = 'LAYOUT_WIDE'")
-
+    pushLine ("</head>")
+    pushLine ("<body>")
+    pushLine ("<script>")
+    pushLine ("let pptx = new PptxGenJS();")
+    pushLine ("pptx.layout = 'LAYOUT_WIDE'")
 
     For Each osl In pres.Slides
    
@@ -72,49 +72,48 @@ pushLine ("<body>")
                         pushLine (st)
                     End Select
                 Case 3 ' Chart
-                dataChartAreaLine = "let dataChartAreaLine= ["
-                Dim c As Object
-                Dim chartColors As String
+                    dataChartAreaLine = "let dataChartAreaLine= ["
+                    Dim c As Object
+                    Dim chartColors As String
                 
-                For temp = 1 To ob.Chart.SeriesCollection.Count
-    With ob.Chart.SeriesCollection.Item(temp)
-    chartColors = chartColors + "'" + toRGB(.Fill.ForeColor.RGB) + "',"
-    Z = .XValues
-If temp > 1 Then
-    dataChartAreaLine = dataChartAreaLine + ","
-    End If
-    dataChartAreaLine = dataChartAreaLine + "{ name:'" + .Name + "',"
-    dataChartAreaLine = dataChartAreaLine + "labels: ["
-        For Each xv In Z
-            dataChartAreaLine = dataChartAreaLine + "'" + xv + "',"
-        Next xv
-        dataChartAreaLine = Left(dataChartAreaLine, Len(dataChartAreaLine) - 1) ' remove last comma
+                    For temp = 1 To ob.Chart.SeriesCollection.Count
+                        With ob.Chart.SeriesCollection.Item(temp)
+                            chartColors = chartColors + "'" + toRGB(.Fill.ForeColor.RGB) + "',"
+                            Z = .XValues
+                            If temp > 1 Then
+                                dataChartAreaLine = dataChartAreaLine + ","
+                            End If
+                            dataChartAreaLine = dataChartAreaLine + "{ name:'" + .Name + "',"
+                            dataChartAreaLine = dataChartAreaLine + "labels: ["
+                            For Each xv In Z
+                                dataChartAreaLine = dataChartAreaLine + "'" + xv + "',"
+                            Next xv
+                            dataChartAreaLine = Left(dataChartAreaLine, Len(dataChartAreaLine) - 1) ' remove last comma
 
-    dataChartAreaLine = dataChartAreaLine + "], values: ["
-    Z = .Values
-        For Each v In Z
-            dataChartAreaLine = dataChartAreaLine + "'" & v & "',"
-        Next v
-        dataChartAreaLine = Left(dataChartAreaLine, Len(dataChartAreaLine) - 1) ' remove last comma
+                            dataChartAreaLine = dataChartAreaLine + "], values: ["
+                            Z = .Values
+                            For Each v In Z
+                                dataChartAreaLine = dataChartAreaLine + "'" & v & "',"
+                            Next v
+                            dataChartAreaLine = Left(dataChartAreaLine, Len(dataChartAreaLine) - 1) ' remove last comma
     
-    dataChartAreaLine = dataChartAreaLine + "]"
-    dataChartAreaLine = dataChartAreaLine + "}"
-    End With
-Next temp
-dataChartAreaLine = dataChartAreaLine + "]"
-chartColors = "[" + Left(chartColors, Len(chartColors) - 1) + "]" ' remove last comma
-Select Case ob.Chart.ChartType
-Case 57 ' Clustered Bar
-    chartColors = chartColors + ",barDir:'bar'"
-Case 51 ' Clustered Column
-    chartColors = chartColors + ",barDir:'col'"
-End Select
-pushLine (dataChartAreaLine)
-st = "slide.addChart(pptx.ChartType.bar,dataChartAreaLine,"
-st = st + "{chartColors: " + chartColors + ",x:" + Str(round2(ob.Left, 2)) + ",y:" + Str(round2(ob.Top, 2)) + ",w:" + Str(round2(ob.Width, 2)) + ",h:" + Str(round2(ob.Height, 2))
+                            dataChartAreaLine = dataChartAreaLine + "]"
+                            dataChartAreaLine = dataChartAreaLine + "}"
+                        End With
+                    Next temp
+                    dataChartAreaLine = dataChartAreaLine + "]"
+                    chartColors = "[" + Left(chartColors, Len(chartColors) - 1) + "]" ' remove last comma
+                    Select Case ob.Chart.ChartType
+                    Case 57 ' Clustered Bar
+                        chartColors = chartColors + ",barDir:'bar'"
+                    Case 51 ' Clustered Column
+                        chartColors = chartColors + ",barDir:'col'"
+                    End Select
+                    pushLine (dataChartAreaLine)
+                    st = "slide.addChart(pptx.ChartType.bar,dataChartAreaLine,"
+                    st = st + "{chartColors: " + chartColors + ",x:" + Str(round2(ob.Left, 2)) + ",y:" + Str(round2(ob.Top, 2)) + ",w:" + Str(round2(ob.Width, 2)) + ",h:" + Str(round2(ob.Height, 2))
                     st = st + "} )"
                     pushLine (st)
-                a = 1
                 Case 17 ' TextBox
                     st = "slide.addText("
                     st = st + "["
@@ -129,9 +128,12 @@ st = st + "{chartColors: " + chartColors + ",x:" + Str(round2(ob.Left, 2)) + ",y
                         st = st + "} }"
                     Next r
                     st = st + "], {align:'" + msoParAligns(ob.TextFrame.TextRange.ParagraphFormat.Alignment) + "'"
-                    If ob.TextFrame.AutoSize = 1 Then
+                    Select Case ob.TextFrame.AutoSize
+                    Case 1
                         st = st + ",autofit: 'true'"
-                    End If
+                    Case 2
+                        st = st + ",shrinkTextL: 'true'"
+                    End Select
                     st = st + ",zorder:" + Str(ob.ZOrderPosition) + ",x:" + Str(round2(ob.Left, 2)) + ",y:" + Str(round2(ob.Top, 2)) + ",w:" + Str(round2(ob.Width, 2)) + ",h:" + Str(round2(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation)
                     If ob.Fill.Visible Then
                         st = st + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "' }"
@@ -141,9 +143,6 @@ st = st + "{chartColors: " + chartColors + ",x:" + Str(round2(ob.Left, 2)) + ",y
                 Case 13, 28
                     iFN = "images/__" + ob.Name + ".png"
                     Call ob.Export(iFN, ppShapeFormatPNG)
-                    If ob.Name = "Graphic 141" Then
-                    a = 1
-                    End If
                     st = "slide.addImage({x:" + Str(round2(ob.Left, 2)) + ",y:" + Str(round2(ob.Top, 2)) + ",w:" + Str(round2(ob.Width, 2)) + ",h:" + Str(round2(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", path:'" + iFN + "' })"
                     pushLine (st)
 
@@ -157,15 +156,18 @@ st = st + "{chartColors: " + chartColors + ",x:" + Str(round2(ob.Left, 2)) + ",y
     pres.Close
     
     pushLine ("pptx.writeFile();")
-pushLine ("</script>")
-pushLine ("</body>")
-pushLine ("</html>")
+    pushLine ("</script>")
+    pushLine ("</body>")
+    pushLine ("</html>")
 
-Open "ppt.html" For Output As #1
-For Each ln In outlines
-    Print #1, ln
-Next ln
-Close #1
+' export the result to the HTML file
+    Open "ppt.html" For Output As #1
+    For Each ln In outlines
+        Print #1, ln
+    Next ln
+    Close #1
+    
+    Debug.Print (Now & ": Complete!")
 
 End Sub
 Private Function round2(n As Single, f) As Single
