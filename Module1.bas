@@ -72,10 +72,10 @@ Set oPPApp = New PowerPoint.Application
                         pushLine (st)
                     End Select
                 Case 3 ' Chart
-                    dataChartAreaLine = "let dataChartAreaLine= ["
+                    dataChartAreaLine = "dataChartAreaLine= ["
                     Dim c As Object
                     Dim chartColors As String
-                
+                    chartColors = ""
                     For temp = 1 To ob.Chart.SeriesCollection.Count
                         With ob.Chart.SeriesCollection.Item(temp)
                             chartColors = chartColors + "'" + toRGB(.Fill.ForeColor.RGB) + "',"
@@ -124,7 +124,12 @@ Set oPPApp = New PowerPoint.Application
                         Else
                             st = st + ","
                         End If
-                        st = st + ("{text:'" + Replace(Replace(Replace(r.Text, vbCrLf, ""), vbCr, ""), vbLf, "") + "', options:{fontName:'" + r.Font.Name + "',fontSize:" + Str(r.Font.Size) + ", color:'" + toRGB(r.Font.Color.RGB) + "'")
+                        rFix = Trim(Replace(Replace(Replace(r.Text, vbCrLf, ""), vbCr, ""), vbLf, ""))
+                        rFix = Replace(Replace(rFix, Chr(145), "'"), Chr(146), "'") ' smartquotes '
+                        rFix = Replace(Replace(rFix, Chr(145), Chr(34)), Chr(146), Chr(34)) ' smartquotes "
+                        rFix = Replace(rFix, Chr(133), "...") ' ellipsis
+                        rFix = Replace(rFix, "'", "%27") ' ellipsis
+                        st = st + ("{text:'" + rFix + "', options:{fontName:'" + r.Font.Name + "',fontSize:" + Str(r.Font.Size) + ", color:'" + toRGB(r.Font.Color.RGB) + "'")
                         st = st + "} }"
                     Next r
                     st = st + "], {align:'" + msoParAligns(ob.TextFrame.TextRange.ParagraphFormat.Alignment) + "'"
@@ -132,7 +137,7 @@ Set oPPApp = New PowerPoint.Application
                     Case 1
                         st = st + ",autofit: 'true'"
                     Case 2
-                        st = st + ",shrinkTextL: 'true'"
+                        st = st + ",shrinkText: 'true'"
                     End Select
                     st = st + ",zorder:" + Str(ob.ZOrderPosition) + ",x:" + Str(round2(ob.Left, 2)) + ",y:" + Str(round2(ob.Top, 2)) + ",w:" + Str(round2(ob.Width, 2)) + ",h:" + Str(round2(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation)
                     If ob.Fill.Visible Then
