@@ -20,9 +20,6 @@ Set oPPApp = New PowerPoint.Application
     msoDashStyles(1) = "solid"
     msoDashStyles(-2) = "lgDashDot"
     msoDashStyles(4) = "lgDash"
-    Set msoParAligns = New Scripting.Dictionary
-    msoParAligns(1) = "left"
-    msoParAligns(2) = "center"
 
     ' removes all other presentations
     ' (DON'T RUN THIS UNLESS YOU'VE SAVED EVERYTHING!!)
@@ -65,10 +62,16 @@ Set oPPApp = New PowerPoint.Application
                 Case 1 'AutoShape
                     Select Case ob.AutoShapeType
                     Case 1 ' Rectangle
-                        st = "slide.addShape(pptx.ShapeType.rect,{line:'" + toRGB(ob.Line.ForeColor.RGB) + "',lineDash:'" & msoDashStyles(ob.Line.DashStyle) & "',x:" + Str(round2(ob.Left, 2)) + ",y:" + Str(round2(ob.Top, 2)) + ",w:" + Str(round2(ob.Width, 2)) + ",h:" + Str(round2(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "',zorder:" + Str(ob.ZOrderPosition) + " } })"
+                        If ob.HasTextFrame Then
+                            st = "slide.addText("
+                            gt = getText(ob)
+                            st = st + gt(0) + ", {shape:pptx.ShapeType.rect," + gt(1) + ",line:'" + toRGB(ob.Line.ForeColor.RGB) + "',lineDash:'" & msoDashStyles(ob.Line.DashStyle) & "',x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "' }} )"
+                        Else
+                            st = "slide.addShape(pptx.ShapeType.rect,{line:'" + toRGB(ob.Line.ForeColor.RGB) + "',lineDash:'" & msoDashStyles(ob.Line.DashStyle) & "',x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "'} })"
+                        End If
                         pushLine (st)
                     Case 10 'Hexagon
-                        st = "slide.addShape(pptx.ShapeType.hexagon,{x:" + Str(round2(ob.Left, 2)) + ",y:" + Str(round2(ob.Top, 2)) + ",w:" + Str(round2(ob.Width, 2)) + ",h:" + Str(round2(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "' } })"
+                        st = "slide.addShape(pptx.ShapeType.hexagon,{x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "' } })"
                         pushLine (st)
                     End Select
                 Case 3 ' Chart
@@ -111,35 +114,16 @@ Set oPPApp = New PowerPoint.Application
                     End Select
                     pushLine (dataChartAreaLine)
                     st = "slide.addChart(pptx.ChartType.bar,dataChartAreaLine,"
-                    st = st + "{chartColors: " + chartColors + ",x:" + Str(round2(ob.Left, 2)) + ",y:" + Str(round2(ob.Top, 2)) + ",w:" + Str(round2(ob.Width, 2)) + ",h:" + Str(round2(ob.Height, 2))
+                    st = st + "{chartColors: " + chartColors + ",x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2))
                     st = st + "} )"
                     pushLine (st)
                 Case 17 ' TextBox
                     st = "slide.addText("
-                    st = st + "["
-                    rcomma = False
-                    For Each r In ob.TextFrame.TextRange.Runs
-                        If Not rcomma Then
-                            rcomma = True
-                        Else
-                            st = st + ","
-                        End If
-                        rFix = Trim(Replace(Replace(Replace(r.Text, vbCrLf, ""), vbCr, ""), vbLf, ""))
-                        rFix = Replace(Replace(rFix, Chr(145), "'"), Chr(146), "'") ' smartquotes '
-                        rFix = Replace(Replace(rFix, Chr(145), Chr(34)), Chr(146), Chr(34)) ' smartquotes "
-                        rFix = Replace(rFix, Chr(133), "...") ' ellipsis
-                        rFix = Replace(rFix, "'", "%27") ' ellipsis
-                        st = st + ("{text:'" + rFix + "', options:{fontName:'" + r.Font.Name + "',fontSize:" + Str(r.Font.Size) + ", color:'" + toRGB(r.Font.Color.RGB) + "'")
-                        st = st + "} }"
-                    Next r
-                    st = st + "], {align:'" + msoParAligns(ob.TextFrame.TextRange.ParagraphFormat.Alignment) + "'"
-                    Select Case ob.TextFrame.AutoSize
-                    Case 1
-                        st = st + ",autofit: 'true'"
-                    Case 2
-                        st = st + ",shrinkText: 'true'"
-                    End Select
-                    st = st + ",zorder:" + Str(ob.ZOrderPosition) + ",x:" + Str(round2(ob.Left, 2)) + ",y:" + Str(round2(ob.Top, 2)) + ",w:" + Str(round2(ob.Width, 2)) + ",h:" + Str(round2(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation)
+                    gt = getText(ob)
+                    
+                    st = st + gt(0) + ",{" + gt(1)
+                    
+                    st = st + ",x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation)
                     If ob.Fill.Visible Then
                         st = st + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "' }"
                     End If
@@ -148,7 +132,7 @@ Set oPPApp = New PowerPoint.Application
                 Case 13, 28
                     iFN = "images/__" + ob.Name + ".png"
                     Call ob.Export(iFN, ppShapeFormatPNG)
-                    st = "slide.addImage({x:" + Str(round2(ob.Left, 2)) + ",y:" + Str(round2(ob.Top, 2)) + ",w:" + Str(round2(ob.Width, 2)) + ",h:" + Str(round2(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", path:'" + iFN + "' })"
+                    st = "slide.addImage({x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", path:'" + iFN + "' })"
                     pushLine (st)
 
                 End Select
@@ -175,8 +159,8 @@ Set oPPApp = New PowerPoint.Application
     Debug.Print (Now & ": Complete!")
 
 End Sub
-Private Function round2(n As Single, f) As Single
-    round2 = ((n / 72) + 0)
+Private Function pt2in(n As Single, f) As Single
+    pt2in = ((n / 72) + 0)
 End Function
 Private Function toRGB(c)
 Dim retval(3), ii
@@ -195,3 +179,50 @@ ReDim Preserve outlines(0 To UBound(outlines) + 1)
     outlines(UBound(outlines)) = l
 End Sub
 
+Private Function getText(ob As Variant) As Variant
+Dim result(1) As String
+Dim st As String, oPo As String
+Dim rcomma As Boolean
+    Set msoParAligns = New Scripting.Dictionary
+    msoParAligns(1) = "left"
+    msoParAligns(2) = "center"
+
+    st = "["
+    rcomma = False
+    For Each r In ob.TextFrame.TextRange.Runs
+        If Not rcomma Then
+            rcomma = True
+        Else
+            st = st + ","
+        End If
+        rFix = Replace(Replace(Replace(r.Text, vbCrLf, ""), vbCr, ""), vbLf, "")
+        rFix = Replace(Replace(rFix, Chr(145), "'"), Chr(146), "'") ' smartquotes '
+        rFix = Replace(Replace(rFix, Chr(145), Chr(34)), Chr(146), Chr(34)) ' smartquotes "
+        rFix = Replace(rFix, Chr(133), "...") ' ellipsis
+        rFix = Replace(rFix, "'", "%27") ' single quote (JSON safe)
+        st = st + ("{text:'" + rFix + "', options:{fontName:'" + r.Font.Name + "',fontSize:" + Str(r.Font.Size) + ", color:'" + toRGB(r.Font.Color.RGB) + "'")
+        If r.Font.Bold Then
+            st = st + ",bold:true"
+        End If
+        If r.Font.Italic Then
+            st = st + ",italic:true"
+        End If
+
+        st = st + "} }"
+    Next r
+    st = st + "]"
+    
+    oOpt = "align:'" + msoParAligns(ob.TextFrame.TextRange.ParagraphFormat.Alignment) + "'"
+    Select Case ob.TextFrame.AutoSize
+    Case 1
+        oOpt = oOpt + ",autofit: 'true'"
+    Case 2
+        oOpt = oOpt + ",shrinkText: 'true'"
+    End Select
+
+    result(0) = st
+    result(1) = oOpt
+
+    getText = result
+
+End Function
