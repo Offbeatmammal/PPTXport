@@ -59,6 +59,7 @@ slideNum = 0
         slideNum = slideNum + 1
    
         pushLine ("slide = pptx.addSlide();")
+        pushLine ("slide.bkgd ='" + toRGB(osl.Background.Fill.ForeColor.RGB) + "'")
         ' go through each shape
         For Each ob In osl.Shapes
             If msoTypes.Exists(ob.Type) Then
@@ -69,9 +70,24 @@ slideNum = 0
                         If ob.HasTextFrame And ob.TextFrame2.TextRange.Text <> "" Then
                             st = "slide.addText("
                             gt = getText(ob)
-                            st = st + gt(0) + ", {shape:pptx.ShapeType.rect," + gt(1) + ",line:'" + toRGB(ob.Line.ForeColor.RGB) + "',lineDash:'" & msoDashStyles(ob.Line.DashStyle) & "',x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "' }} )"
+                            st = st + gt(0) + ", {shape:pptx.ShapeType.rect," + gt(1) + ",x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation)
+                            If ob.Line.Visible Then
+                                st = st + ",line:'" + toRGB(ob.Line.ForeColor.RGB) + "',lineDash:'" & msoDashStyles(ob.Line.DashStyle) & "'"
+                            End If
+                            If ob.Fill.Visible Then
+                                st = st + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "' }"
+                            End If
+                            st = st + "} )"
                         Else
-                            st = "slide.addShape(pptx.ShapeType.rect,{line:'" + toRGB(ob.Line.ForeColor.RGB) + "',lineDash:'" & msoDashStyles(ob.Line.DashStyle) & "',x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "'} })"
+                            st = "slide.addShape(pptx.ShapeType.rect,{x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation)
+                            If ob.Line.Visible Then
+                                st = st + ",line:'" + toRGB(ob.Line.ForeColor.RGB) + "',lineDash:'" & msoDashStyles(ob.Line.DashStyle) & "'"
+                            End If
+                            If ob.Fill.Visible Then
+                                st = st + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "' }"
+                            End If
+                            st = st + "} )"
+
                         End If
                         pushLine (st)
                     Case 10 'Hexagon
