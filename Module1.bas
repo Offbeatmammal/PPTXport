@@ -1,10 +1,13 @@
 Attribute VB_Name = "Module1"
 Dim outlines() As String
+Dim slideNum As Integer
 
 Sub PPTXport()
 Dim pres As Presentation
 Dim oPPApp As Object
+
 Set oPPApp = New PowerPoint.Application
+slideNum = 0
 
     Set msoTypes = New Scripting.Dictionary
     msoTypes(1) = "AutoShape"
@@ -53,6 +56,7 @@ Set oPPApp = New PowerPoint.Application
     pushLine ("pptx.layout = 'LAYOUT_WIDE'")
 
     For Each osl In pres.Slides
+        slideNum = slideNum + 1
    
         pushLine ("slide = pptx.addSlide();")
         ' go through each shape
@@ -62,7 +66,7 @@ Set oPPApp = New PowerPoint.Application
                 Case 1 'AutoShape
                     Select Case ob.AutoShapeType
                     Case 1 ' Rectangle
-                        If ob.HasTextFrame Then
+                        If ob.HasTextFrame And ob.TextFrame2.TextRange.Text <> "" Then
                             st = "slide.addText("
                             gt = getText(ob)
                             st = st + gt(0) + ", {shape:pptx.ShapeType.rect," + gt(1) + ",line:'" + toRGB(ob.Line.ForeColor.RGB) + "',lineDash:'" & msoDashStyles(ob.Line.DashStyle) & "',x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "' }} )"
@@ -130,7 +134,7 @@ Set oPPApp = New PowerPoint.Application
                     st = st + "} )"
                     pushLine (st)
                 Case 13, 28
-                    iFN = "images/__" + ob.Name + ".png"
+                    iFN = "images/__" + Trim(Str(slideNum)) + "_" + ob.Name + ".png"
                     Call ob.Export(iFN, ppShapeFormatPNG)
                     st = "slide.addImage({x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation) + ", path:'" + iFN + "' })"
                     pushLine (st)
@@ -157,10 +161,11 @@ Set oPPApp = New PowerPoint.Application
     Close #1
     
     Debug.Print (Now & ": Complete!")
+    MsgBox "Done!"
 
 End Sub
 Private Function pt2in(n As Single, f) As Single
-    pt2in = ((n / 72) + 0)
+    pt2in = Round((n / 72) + 0.01, 2)
 End Function
 Private Function toRGB(c)
 Dim retval(3), ii
@@ -181,7 +186,7 @@ End Sub
 
 Private Function getText(ob As Variant) As Variant
 Dim result(1) As String
-Dim st As String, oPo As String
+Dim st As String, oPo As String, rFix As String
 Dim rcomma As Boolean
     Set msoParAligns = New Scripting.Dictionary
     msoParAligns(1) = "left"
@@ -196,10 +201,7 @@ Dim rcomma As Boolean
             st = st + ","
         End If
         rFix = Replace(Replace(Replace(r.Text, vbCrLf, ""), vbCr, ""), vbLf, "")
-        rFix = Replace(Replace(rFix, Chr(145), "'"), Chr(146), "'") ' smartquotes '
-        rFix = Replace(Replace(rFix, Chr(145), Chr(34)), Chr(146), Chr(34)) ' smartquotes "
-        rFix = Replace(rFix, Chr(133), "...") ' ellipsis
-        rFix = Replace(rFix, "'", "%27") ' single quote (JSON safe)
+        rFix = unicode(rFix)
         st = st + ("{text:'" + rFix + "', options:{fontName:'" + r.Font.Name + "',fontSize:" + Str(r.Font.Size) + ", color:'" + toRGB(r.Font.Color.RGB) + "'")
         If r.Font.Bold Then
             st = st + ",bold:true"
@@ -225,4 +227,22 @@ Dim rcomma As Boolean
 
     getText = result
 
+End Function
+
+Private Function unicode(st As String) As String
+Dim o As String
+    o = ""
+    For i = 1 To Len(st)
+        ch = Mid(st, i, 1)
+        If (AscW(ch) >= 32 And AscW(ch) <= 127) And ch <> "'" Then
+            o = o + ch
+        Else
+            If AscW(ch) > 127 Then
+            o = o + "\u" + Right("0000" + Trim((Hex(AscW(ch)))), 4)
+            Else
+                o = o + " "
+            End If
+        End If
+    Next
+    unicode = o
 End Function
