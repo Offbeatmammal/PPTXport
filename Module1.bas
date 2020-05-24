@@ -60,8 +60,10 @@ slideNum = 0
    
         pushLine ("slide = pptx.addSlide();")
         pushLine ("slide.bkgd ='" + toRGB(osl.Background.Fill.ForeColor.RGB) + "'")
-        ' go through each shape
-        For Each ob In osl.Shapes
+        ' go through each shape in Presentation (Z-) order
+        For i = 1 To osl.Shapes.Count
+            Set ob = osl.Shapes(i)
+
             If msoTypes.Exists(ob.Type) Then
                 Select Case ob.Type
                 Case 1 'AutoShape
@@ -70,7 +72,7 @@ slideNum = 0
                         If ob.HasTextFrame And ob.TextFrame2.TextRange.Text <> "" Then
                             st = "slide.addText("
                             gt = getText(ob)
-                            st = st + gt(0) + ", {shape:pptx.ShapeType.rect," + gt(1) + ",x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation)
+                            st = st + gt(0) + ", {shape:pptx.ShapeType.rect," + gt(1) + "x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation)
                             If ob.Line.Visible Then
                                 st = st + ",line:'" + toRGB(ob.Line.ForeColor.RGB) + "',lineDash:'" & msoDashStyles(ob.Line.DashStyle) & "'"
                             End If
@@ -143,7 +145,7 @@ slideNum = 0
                     
                     st = st + gt(0) + ",{" + gt(1)
                     
-                    st = st + ",x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation)
+                    st = st + "x:" + Str(pt2in(ob.Left, 2)) + ",y:" + Str(pt2in(ob.Top, 2)) + ",w:" + Str(pt2in(ob.Width, 2)) + ",h:" + Str(pt2in(ob.Height, 2)) + ",rotate:" + Str(ob.Rotation)
                     If ob.Fill.Visible Then
                         st = st + ", fill:{ type:'solid', color:'" + toRGB(ob.Fill.ForeColor.RGB) + "' }"
                     End If
@@ -218,7 +220,7 @@ Dim rcomma As Boolean
         End If
         rFix = Replace(Replace(Replace(r.Text, vbCrLf, ""), vbCr, ""), vbLf, "")
         rFix = unicode(rFix)
-        st = st + ("{text:'" + rFix + "', options:{fontName:'" + r.Font.Name + "',fontSize:" + Str(r.Font.Size) + ", color:'" + toRGB(r.Font.Color.RGB) + "'")
+        st = st + ("{text:'" + rFix + "', options:{breakLine: false, fontName:'" + r.Font.Name + "',fontSize:" + Str(r.Font.Size) + ", color:'" + toRGB(r.Font.Color.RGB) + "'")
         If r.Font.Bold Then
             st = st + ",bold:true"
         End If
@@ -230,13 +232,17 @@ Dim rcomma As Boolean
     Next r
     st = st + "]"
     
-    oOpt = "align:'" + msoParAligns(ob.TextFrame.TextRange.ParagraphFormat.Alignment) + "'"
     Select Case ob.TextFrame.AutoSize
     Case 1
-        oOpt = oOpt + ",autofit: 'true'"
+        oOpt = "autofit: 'true',"
     Case 2
-        oOpt = oOpt + ",shrinkText: 'true'"
+        oOpt = "shrinkText: 'true',"
     End Select
+    If ob.TextFrame.TextRange.ParagraphFormat.Alignment = 1 Then
+        ' bug https://github.com/gitbrent/PptxGenJS/issues/730 means you can't disable linebreaks with align
+    Else
+        oOpt = oOpt + "align:'" + msoParAligns(ob.TextFrame.TextRange.ParagraphFormat.Alignment) + "',"
+    End If
 
     result(0) = st
     result(1) = oOpt

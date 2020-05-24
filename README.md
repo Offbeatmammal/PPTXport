@@ -7,6 +7,6 @@ This is a very early first attempt but will continue to evolve - it's currently 
 
 To use, create a new blank PPTX, import the module and run it. It will ask you to select the source file and then will process the elements and write out a new file called ppt.html - if you open that in a browser (via a webserver that also points to the images directory) it will run the PptxGenJS scripts to create the powerpoint PPTX file.
 
-If you have images in the PPTX or PPTM please create an [code]images[/code] directory before running the script.
+If you have images in the PPTX or PPTM please create an `images` directory before running the script.
 
 Note: Currently on runs on Windows as it uses the Scripting.Dictionary object
